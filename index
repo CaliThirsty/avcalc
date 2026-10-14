@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CALCULATOR</title>
+<style>
+    :root {
+        --bg-main: #121212;
+        --bg-panel: #181818;
+        --bg-input: #1a1a1a;
+        --text-main: #ffffff;
+        --text-muted: #b3b3b3;
+        --border-color: #333333;
+        --highlight: #ffffff;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* Sidebar Navigation */
+    #sidebar {
+        height: 100%;
+        width: 250px;
+        position: fixed;
+        z-index: 100;
+        top: 0;
+        left: -250px;
+        background-color: #1a1a1a;
+        border-right: 1px solid var(--border-color);
+        overflow-x: hidden;
+        transition: left 0.3s;
+        padding-top: 50px;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+    }
+
+    /* Clickable Sidebar Heading */
+    .sidebar-heading {
+        position: absolute;
+        top: 14px;
+        left: 20px;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-main);
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.2s;
+    }
+
+    .sidebar-heading:hover {
+        color: var(--text-muted);
+    }
+
+    #sidebar a {
+        padding: 12px 20px;
+        text-decoration: none;
+        font-size: 15px;
+        color: var(--text-muted);
+        display: block;
+        transition: 0.2s;
+        cursor: pointer;
+    }
+
+    #sidebar a:hover, #sidebar a.active {
+        color: var(--text-main);
+        background-color: #2a2a2a;
+        border-left: 3px solid var(--text-main);
+        padding-left: 17px;
+    }
+
+    #sidebar .closebtn {
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        font-size: 28px;
+        border: none !important;
+        background: none !important;
+        padding: 0;
+    }
+
+    #overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6);
+        z-index: 50;
+    }
+
+    /* Main Content */
+    #main {
+        padding: 12px;
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .hamburger {
+        font-size: 22px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: var(--text-main);
+        margin-right: 12px;
+    }
+
+    #page-title {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    /* Calculator Panels */
+    .calc-panel {
+        display: none;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .calc-panel.active {
+        display: block;
+    }
+
+    .section-card {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 12px;
+    }
+
+    /* Start-up Menu Buttons */
+    .menu-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .menu-card-btn {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 20px 16px;
+        cursor: pointer;
+        transition: background-color 0.2s, border-color 0.2s;
+        text-align: left;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        outline: none;
+    }
+
+    .menu-card-btn:hover {
+        background-color: #222222;
+        border-color: #555555;
+    }
+
+    .menu-btn-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .menu-btn-desc {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .form-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        min-height: 36px;
+    }
+
+    .form-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .left-col {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        flex: 1;
+        padding-right: 10px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-main);
+    }
+
+    .form-group input[type="number"], .form-group input[type="text"] {
+        width: 110px;
+        flex: 0 0 110px;
+        background-color: var(--bg-input);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 16px;
+        height: 34px;
+        outline: none;
+    }
+    
+    .form-group input:focus {
+        border-color: #666;
+    }
+
+    .form-group input:read-only {
+        color: var(--text-muted);
+    }
+
+    .radio-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .radio-group label {
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-weight: normal;
+        cursor: pointer;
+    }
+
+    .radio-group input[type="radio"] {
+        margin: 0;
+        cursor: pointer;
+    }
+
+    /* Dashed separator line matching bounding box color */
+    .spacer {
+        height: 0;
+        border: none;
+        border-top: 1px dashed var(--border-color);
+        margin: 10px 0 12px 0;
+    }
+</style>
+</head>
+<body>
+
+<div id="overlay" onclick="toggleNav()"></div>
+
+<div id="sidebar">
+    <span class="sidebar-heading" onclick="switchPanel('home-panel')">CALCULATOR</span>
+    <a href="javascript:void(0)" class="closebtn" onclick="toggleNav()">&times;</a>
+    <a onclick="switchPanel('tod-calc')" id="nav-tod-calc">Tecnam P2008jc performance calculator</a>
+    <a onclick="switchPanel('time-calc')" id="nav-time-calc">Flight Time</a>
+</div>
+
+<div id="main">
+    <header>
+        <button class="hamburger" onclick="toggleNav()">&#9776;</button>
+        <h2 id="page-title">Flight Calculator</h2>
+    </header>
+
+    <!-- Start-up / Launcher Page -->
+    <div id="home-panel" class="calc-panel active">
+        <div class="menu-grid">
+            <button class="menu-card-btn" onclick="switchPanel('tod-calc')">
+                <span class="menu-btn-title">Tecnam P2008JC Performance</span>
+                <span class="menu-btn-desc">Takeoff and Landing ground roll distance, headwind and crosswind calculations</span>
+            </button>
+            <button class="menu-card-btn" onclick="switchPanel('time-calc')">
+                <span class="menu-btn-title">Flight Time Calculator</span>
+                <span class="menu-btn-desc">Zulu time duration and decimal hour conversion</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Takeoff & Landing Calculator -->
+    <div id="tod-calc" class="calc-panel">
+        <div class="section-card">
+            <div class="form-group">
+                <div class="left-col">
+                    <label>Outside Air Temp</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="temp_unit" value="c" checked onchange="calcPerformance()">°C</label>
+                        <label><input type="radio" name="temp_unit" value="f" onchange="calcPerformance()">°F</label>
+                    </div>
+                </div>
+                <input type="number" inputmode="decimal" id="oat" step="any" oninput="calcPerformance()">
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>Runway in Use :</label></div>
+                <input type="number" inputmode="decimal" id="rwy" min="1" max="360" step="any" oninput="calcPerformance()">
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>Wind Direction :</label></div>
+                <input type="number" inputmode="decimal" id="wind_dir" min="0" max="360" step="any" oninput="calcPerformance()">
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>Wind Speed :</label></div>
+                <input type="number" inputmode="decimal" id="wind_spd" min="0" step="any" oninput="calcPerformance()">
+            </div>
+            
+            <div class="spacer"></div>
+
+            <div class="form-group">
+                <div class="left-col"><label>Take Off Distance :</label></div>
+                <input type="number" id="tod_result" step="any" readonly>
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>Landing Distance :</label></div>
+                <input type="number" id="ld_result" step="any" readonly>
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>Headwind Component :</label></div>
+                <input type="number" id="hw_result" step="any" readonly>
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>Crosswind Component :</label></div>
+                <input type="number" id="xw_result" step="any" readonly>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flight Time (Zulu) Calculator -->
+    <div id="time-calc" class="calc-panel">
+        <div class="section-card">
+            <div class="form-group">
+                <div class="left-col"><label>Start Time (Zulu) :</label></div>
+                <input type="text" inputmode="numeric" id="start_zulu" maxlength="4" placeholder="0000" oninput="calcZuluTime()">
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>End Time (Zulu) :</label></div>
+                <input type="text" inputmode="numeric" id="end_zulu" maxlength="4" placeholder="0000" oninput="calcZuluTime()">
+            </div>
+            
+            <div class="spacer"></div>
+
+            <div class="form-group">
+                <div class="left-col"><label>Time Passed :</label></div>
+                <input type="text" id="zulu_elapsed" placeholder="00:00" readonly>
+            </div>
+            <div class="form-group">
+                <div class="left-col"><label>Decimal Time :</label></div>
+                <input type="text" id="zulu_decimal" readonly>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let sidebarOpen = false;
+
+    function toggleNav() {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("overlay");
+        
+        if (!sidebarOpen) {
+            sidebar.style.left = "0";
+            overlay.style.display = "block";
+            sidebarOpen = true;
+        } else {
+            sidebar.style.left = "-250px";
+            overlay.style.display = "none";
+            sidebarOpen = false;
+        }
+    }
+
+    function switchPanel(panelId) {
+        document.querySelectorAll('.calc-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        document.querySelectorAll('#sidebar a:not(.closebtn)').forEach(a => {
+            a.classList.remove('active');
+        });
+        
+        const targetPanel = document.getElementById(panelId);
+        if (targetPanel) targetPanel.classList.add('active');
+        
+        const activeNav = document.getElementById('nav-' + panelId);
+        if (activeNav) activeNav.classList.add('active');
+        
+        if (panelId === 'home-panel') {
+            document.getElementById('page-title').innerText = "Flight Calculator";
+        } else if (panelId === 'tod-calc') {
+            document.getElementById('page-title').innerText = "Tecnam P2008JC performance calculator";
+        } else if (panelId === 'time-calc') {
+            document.getElementById('page-title').innerText = "Flight Time Calculator";
+        }
+        
+        if (window.innerWidth <= 768 && sidebarOpen) toggleNav(); 
+    }
+
+    const deg2rad = (deg) => deg * (Math.PI / 180);
+
+    let currentTempUnit = 'c';
+
+    function calcPerformance() {
+        const tempUnitEl = document.querySelector('input[name="temp_unit"]:checked');
+        if (!tempUnitEl) return;
+
+        const tempUnit = tempUnitEl.value;
+        const tempInput = document.getElementById('oat');
+        const rwyInput = document.getElementById('rwy');
+        const windDirInput = document.getElementById('wind_dir');
+        const windSpdInput = document.getElementById('wind_spd');
+
+        // Bidirectional temperature conversion accurate up to 4 decimals
+        if (tempUnit !== currentTempUnit) {
+            let val = parseFloat(tempInput.value);
+            if (!isNaN(val)) {
+                let converted = (tempUnit === 'f') ? ((val * 9/5) + 32) : ((val - 32) * 5/9);
+                if (Math.abs(converted) < 0.00001) converted = 0;
+                tempInput.value = parseFloat(converted.toFixed(4));
+            }
+            currentTempUnit = tempUnit;
+        }
+
+        const tempStr = tempInput.value.trim();
+        const rwyStr = rwyInput.value.trim();
+        const windDirStr = windDirInput.value.trim();
+        const windSpdStr = windSpdInput.value.trim();
+
+        const hasTemp = tempStr !== '' && !isNaN(Number(tempStr));
+        const hasRwy = rwyStr !== '' && !isNaN(Number(rwyStr));
+        const hasWindDir = windDirStr !== '' && !isNaN(Number(windDirStr));
+        const hasWindSpd = windSpdStr !== '' && !isNaN(Number(windSpdStr));
+
+        const todEl = document.getElementById('tod_result');
+        const ldEl = document.getElementById('ld_result');
+        const hwEl = document.getElementById('hw_result');
+        const xwEl = document.getElementById('xw_result');
+
+        if (hasTemp && hasRwy && hasWindDir && hasWindSpd) {
+            const tempVal = parseFloat(tempStr);
+            const oatC = (tempUnit === 'f') ? (tempVal - 32) * 5/9 : tempVal;
+            
+            const rwyVal = parseFloat(rwyStr);
+            const rwyHdg = (rwyVal > 0 && rwyVal <= 36) ? (rwyVal * 10) : rwyVal;
+            const windDir = parseFloat(windDirStr);
+            const windSpeed = parseFloat(windSpdStr);
+
+            // Angular difference between wind and runway (0° to 180°)
+            let angleDiff = Math.abs(windDir - rwyHdg) % 360;
+            if (angleDiff > 180) angleDiff = 360 - angleDiff;
+
+            const windAngleRad = deg2rad(angleDiff);
+            const cosAngle = Math.cos(windAngleRad);
+            const sinAngle = Math.sin(windAngleRad);
+
+            // Calculations
+            const tod = ((244 + 2.08 * (oatC - 25)) - (5 * cosAngle * windSpeed)) * 0.9 * 1.1;
+            const ld = ((179 + 0.6 * (oatC - 25)) - (4 * cosAngle * windSpeed)) * 0.9 * 1.67;
+            const headwind = cosAngle * windSpeed;
+            const crosswind = Math.abs(sinAngle * windSpeed);
+
+            todEl.value = Math.max(0, tod).toFixed(4);
+            ldEl.value = Math.max(0, ld).toFixed(4);
+            hwEl.value = headwind.toFixed(4);
+            xwEl.value = crosswind.toFixed(4);
+        } else {
+            todEl.value = '';
+            ldEl.value = '';
+            hwEl.value = '';
+            xwEl.value = '';
+        }
+    }
+
+    // Official VAR Part 15 - 15.003 Decimal Lookup
+    function getDecimalTenth(minutes) {
+        if (minutes >= 0 && minutes <= 2) return 0.0;
+        if (minutes >= 3 && minutes <= 8) return 0.1;
+        if (minutes >= 9 && minutes <= 14) return 0.2;
+        if (minutes >= 15 && minutes <= 20) return 0.3;
+        if (minutes >= 21 && minutes <= 26) return 0.4;
+        if (minutes >= 27 && minutes <= 32) return 0.5;
+        if (minutes >= 33 && minutes <= 38) return 0.6;
+        if (minutes >= 39 && minutes <= 44) return 0.7;
+        if (minutes >= 45 && minutes <= 50) return 0.8;
+        if (minutes >= 51 && minutes <= 56) return 0.9;
+        if (minutes >= 57 && minutes <= 60) return 1.0;
+        return 0.0;
+    }
+
+    // Zulu Time Calculation with VAR Part 15 Table
+    function calcZuluTime() {
+        const startInput = document.getElementById('start_zulu');
+        const endInput = document.getElementById('end_zulu');
+        const resultEl = document.getElementById('zulu_elapsed');
+        const decimalEl = document.getElementById('zulu_decimal');
+
+        const startRaw = startInput.value.replace(/\D/g, '');
+        const endRaw = endInput.value.replace(/\D/g, '');
+
+        if (startRaw.length === 4 && endRaw.length === 4) {
+            const startH = parseInt(startRaw.slice(0, 2), 10);
+            const startM = parseInt(startRaw.slice(2, 4), 10);
+            const endH = parseInt(endRaw.slice(0, 2), 10);
+            const endM = parseInt(endRaw.slice(2, 4), 10);
+
+            // Validate standard 24h Zulu hours and minutes
+            if (startH < 24 && startM < 60 && endH < 24 && endM < 60) {
+                const startTotalMin = startH * 60 + startM;
+                let endTotalMin = endH * 60 + endM;
+
+                // Handles crossing midnight
+                if (endTotalMin < startTotalMin) {
+                    endTotalMin += 24 * 60;
+                }
+
+                const diffMin = endTotalMin - startTotalMin;
+                const hours = Math.floor(diffMin / 60);
+                const minutes = diffMin % 60;
+
+                const pad = (num) => String(num).padStart(2, '0');
+                resultEl.value = `${pad(hours)}:${pad(minutes)}`;
+
+                // VAR Part 15 decimal computation
+                const decTenth = getDecimalTenth(minutes);
+                decimalEl.value = (hours + decTenth).toFixed(1);
+                return;
+            }
+        }
+
+        resultEl.value = '';
+        decimalEl.value = '';
+    }
+
+    document.addEventListener('DOMContentLoaded', calcPerformance);
+</script>
+</body>
+</html>
